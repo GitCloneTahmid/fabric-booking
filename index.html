@@ -1,0 +1,1589 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Life Textile – Fabric Booking Calculator</title>
+
+<style>
+  /* ============================================================
+     THEME
+     ============================================================ */
+  :root {
+    --bg:          #ffffff;
+    --card:        #ffffff;
+    --text:        #000000;
+    --muted:       #555555;
+    --accent:      #c8102e;
+    --accent-soft: #fdf0f2;
+    --line:        #c8102e;
+    --warn-bg:     #fff4e5;
+    --warn-text:   #8a4b00;
+    --ok-text:     #17703a;
+
+    color-scheme: light;
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 15px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  }
+
+  /* ============================================================
+     LAYOUT
+     ============================================================ */
+  header {
+    padding: 18px 16px;
+    text-align: center;
+    border-bottom: 2px solid var(--accent);
+  }
+  header h1 { margin: 0; font-size: 1.35rem; }
+
+  main {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 16px 12px 40px;
+  }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+  .card h2 {
+    margin: 0 0 12px;
+    font-size: 1.05rem;
+    color: var(--accent);
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    gap: 12px;
+  }
+  .grid.spaced { margin-bottom: 12px; }
+
+  .row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-top: 12px;
+  }
+
+  /* ============================================================
+     FORM CONTROLS
+     ============================================================ */
+  label {
+    display: block;
+    margin-bottom: 3px;
+    font-size: .78rem;
+  }
+
+  input, select, textarea {
+    width: 100%;
+    min-width: 0;
+    padding: 9px 8px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--card);
+    color: var(--text);
+    font: inherit;
+    font-size: 16px;            /* 16px stops iOS from zooming on focus */
+  }
+  textarea { resize: vertical; min-height: 96px; line-height: 1.4; }
+
+  input:focus, select:focus, textarea:focus, button:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 0;
+  }
+
+  button {
+    padding: 9px 14px;
+    border: 1px solid var(--accent);
+    border-radius: 8px;
+    background: #fff;
+    color: var(--accent);
+    font: inherit;
+    font-size: .92rem;
+    cursor: pointer;
+  }
+  button:hover { background: var(--accent-soft); }
+  button:disabled { opacity: .4; cursor: not-allowed; }
+
+  button.primary {
+    padding: 12px 20px;
+    background: var(--accent);
+    color: #fff;
+    font-weight: 600;
+  }
+  button.primary:hover { background: #a60d25; }
+
+  button.x { padding: 5px 9px; }
+
+  /* ============================================================
+     TABLES
+     ============================================================ */
+  .table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: .88rem;
+  }
+  th, td {
+    padding: 6px;
+    border-bottom: 1px solid var(--line);
+    text-align: right;
+    white-space: nowrap;
+  }
+  th { font-weight: 600; color: var(--accent); background: var(--accent-soft); }
+  th:first-child, td:first-child { text-align: left; }
+
+  td input { min-width: 68px; padding: 7px 6px; text-align: right; }
+  td:first-child input { min-width: 110px; text-align: left; }
+  td select { min-width: 84px; padding: 7px 6px; }
+
+  tfoot td, tr.total td {
+    font-weight: 700;
+    background: var(--accent-soft);
+  }
+
+  .computed { color: var(--accent); font-weight: 600; }
+
+  /* Size drop-down + remove button inside the table header */
+  .size-head { display: flex; align-items: center; gap: 4px; }
+  .size-head select { min-width: 74px; font-weight: 600; }
+
+  /* ============================================================
+     RESULT BLOCK
+     ============================================================ */
+  .kpis {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+  .kpis div {
+    padding: 10px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+  }
+  .kpis b { display: block; font-size: 1.25rem; color: var(--accent); }
+  .kpis span { font-size: .78rem; }
+
+  .subhead { margin: 16px 0 6px; font-weight: 700; font-size: .92rem; }
+
+  /* ============================================================
+     MESSAGES
+     ============================================================ */
+  .note { margin: 8px 0 0; font-size: .8rem; color: var(--muted); }
+
+  .warnings {
+    margin: 0 0 14px;
+    padding: 10px 14px 10px 30px;
+    border-radius: 8px;
+    background: var(--warn-bg);
+    color: var(--warn-text);
+    font-size: .88rem;
+  }
+  .warnings:empty { display: none; }
+
+  .status { margin: 10px 0 0; font-size: .88rem; }
+  .status.ok    { color: var(--ok-text); }
+  .status.error { color: var(--accent); font-weight: 600; }
+  .status.warn  { color: var(--warn-text); }
+
+  details { font-size: .88rem; }
+  summary { cursor: pointer; font-weight: 600; color: var(--accent); }
+  code {
+    padding: 1px 5px;
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    background: var(--accent-soft);
+    font-size: .84rem;
+    white-space: normal;
+  }
+
+  footer { padding: 10px; text-align: center; font-size: .8rem; }
+
+  @media (max-width: 520px) {
+    main { padding: 10px 8px 30px; }
+    .card { padding: 12px; }
+  }
+</style>
+</head>
+
+<body>
+
+<header>
+  <h1>Fabric Booking Calculator</h1>
+</header>
+
+<main>
+
+  <!-- ===== Import from Excel ===== -->
+  <div class="card">
+    <h2>Start from an Excel file</h2>
+    <div class="row" style="margin-top:0">
+      <button id="btnImport">Import Excel (.xlsx)</button>
+      <input type="file" id="fileImport" accept=".xlsx" hidden>
+    </div>
+    <p class="note">
+      Load a booking file you downloaded from this page earlier. Every box below fills in automatically.
+      You can also edit the input cells in that Excel file (quantities, CAD data, losses) and import it again.
+    </p>
+    <p class="status" id="importStatus" role="status"></p>
+  </div>
+
+  <!-- ===== 1. Order information ===== -->
+  <div class="card">
+    <h2>1. Order information</h2>
+    <div class="grid" id="infoGrid"></div>
+  </div>
+
+  <!-- ===== 2. Colour and size quantities ===== -->
+  <div class="card">
+    <h2>2. Colour &amp; size-wise order quantity (pcs)</h2>
+
+    <div class="grid spaced">
+      <div>
+        <label for="product">Product</label>
+        <select id="product">
+          <option value="tshirt">T-shirt</option>
+          <option value="polo">Polo shirt</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="table-wrap"><table id="qtyTable"></table></div>
+
+    <div class="row">
+      <button id="btnAddColour">+ Add colour</button>
+      <button id="btnAddSize">+ Add size</button>
+    </div>
+    <p class="note">Pick sizes from the drop-down (XXS up to 5XL). Use ✕ above a size to remove it.</p>
+  </div>
+
+  <!-- ===== 3. Body fabric CAD ===== -->
+  <div class="card">
+    <h2>3. Body fabric – CAD data (size-wise)</h2>
+
+    <div class="grid spaced">
+      <div>
+        <label for="gsm">Body GSM</label>
+        <input type="number" id="gsm" inputmode="decimal" step="any" data-a="setting" data-k="gsm">
+      </div>
+    </div>
+
+    <div class="table-wrap"><table id="cadTable"></table></div>
+
+    <div class="row">
+      <button id="btnCopyCad">Copy first size to all sizes</button>
+    </div>
+    <p class="note">
+      Fabric width = open width in inches. Marker length = CAD marker length in inches.
+      Pcs = garments in that marker.
+    </p>
+  </div>
+
+  <!-- ===== 4. Rib / collar / cuff / binding ===== -->
+  <div class="card">
+    <h2>4. Rib / collar / cuff / binding</h2>
+
+    <div class="table-wrap"><table id="compTable"></table></div>
+
+    <div class="row">
+      <button id="btnAddComp">+ Add component</button>
+    </div>
+    <p class="note">
+      Enter CAD data, or type a ready consumption in “Direct kg/dzn” (this overrides the CAD calculation).
+      Tube fabric is counted double (tube × 2 = open width).
+    </p>
+  </div>
+
+  <!-- ===== 5. Allowances and losses ===== -->
+  <div class="card">
+    <h2>5. Allowances &amp; losses</h2>
+    <div class="grid" id="settingsGrid"></div>
+  </div>
+
+  <!-- ===== 6. Yarn composition ===== -->
+  <div class="card">
+    <h2>6. Yarn composition</h2>
+
+    <div class="table-wrap"><table id="yarnTable"></table></div>
+
+    <div class="row">
+      <button id="btnAddYarn">+ Add yarn</button>
+    </div>
+    <p class="status" id="yarnStatus"></p>
+    <p class="note">
+      Enter what percentage of the fabric each yarn makes up (for example 95 % Cotton + 5 % Lycra / Elastane).
+      The percentages must add up to 100. The Excel file shows the yarn kg for every line.
+    </p>
+  </div>
+
+  <!-- ===== 7. Remarks ===== -->
+  <div class="card">
+    <h2>7. Remarks / comments</h2>
+    <label for="remarks">Anything else the factory or mill should know</label>
+    <textarea id="remarks" data-a="remarks" maxlength="1500"
+              placeholder="Example: Shade band approval needed before bulk. Wash test on first lot."></textarea>
+  </div>
+
+  <!-- ===== Result ===== -->
+  <div class="card">
+    <h2>Result</h2>
+    <ul class="warnings" id="warnings"></ul>
+    <div id="result"></div>
+    <div class="row">
+      <button class="primary" id="btnExport">Download Excel (.xlsx)</button>
+    </div>
+  </div>
+
+  <!-- ===== Formulas ===== -->
+  <div class="card">
+    <details>
+      <summary>How it is calculated</summary>
+      <p>
+        <b>Consumption (kg/dzn)</b> =
+        <code>Fabric width (in) × Marker length (in) × GSM × 12 ÷ 1550 ÷ 1000 ÷ Pcs in marker</code><br>
+        1550 sq inch = 1 sq metre. Tube fabric: width × 2.
+      </p>
+      <p>
+        <b>Net fabric (kg)</b> = Σ (pcs of each size × kg/dzn of that size ÷ 12) + trims.
+      </p>
+      <p>
+        <b>Booking fabric (kg)</b> = Net fabric × (1 + cutting allowance %).
+        Use CAD consumption as the base and 1–3 % allowance.
+      </p>
+      <p>
+        <b>Yarn before sample (kg)</b> =
+        Booking fabric ÷ (1 − (knitting loss % + dyeing/finishing loss %) ÷ 100).
+      </p>
+      <p>
+        <b>Yarn by composition (kg)</b> = Yarn before sample × composition % ÷ 100.<br>
+        <b>Total yarn (kg)</b> = all composition lines + sample / test yarn.
+      </p>
+    </details>
+  </div>
+
+</main>
+
+<footer>© 2025 Tahmid Mutasim. All rights reserved.</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
+<script>
+/* ==================================================================
+   CONSTANTS
+   ================================================================== */
+
+const SQ_INCH_PER_SQ_METRE = 1550;
+
+// Sizes offered in every size drop-down (in this order).
+const SIZE_LIST = ['XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL', '4XL', '5XL'];
+
+// Other ways people write a size, mapped to the names above (used on Excel import).
+const SIZE_ALIASES = {
+  '2XS': 'XXS', '2XL': 'XXL', 'XXXL': '3XL', 'XXXXL': '4XL', 'XXXXXL': '5XL'
+};
+
+const YARN_TYPES = [
+  'Cotton', 'Polyester', 'Lycra / Elastane', 'Viscose',
+  'Modal', 'Nylon', 'Acrylic', 'Linen', 'Other'
+];
+
+// Order information boxes: [key, label, input type]
+const INFO_FIELDS = [
+  ['buyer', 'Buyer Name'],
+  ['style', 'Style no.'],
+  ['po',    'PO / Order no.'],
+  ['desc',  'Item description'],
+  ['fab',   'Fabrication'],
+  ['bdate', 'Booking date', 'date'],
+  ['ship',  'Ship date',    'date'],
+  ['merch', 'Merchandiser name']
+];
+
+// Allowance and loss boxes: [key, label, input type]
+const SETTING_FIELDS = [
+  ['allowance',  'Cutting allowance %'],
+  ['knitLoss',   'Knitting loss %'],
+  ['dyeLoss',    'Dyeing / finishing loss %'],
+  ['sampleYarn', 'Sample / test yarn (kg)']
+];
+
+// Rib / collar / cuff presets for each product.
+const COMPONENT_PRESETS = {
+  tshirt: [
+    { name: 'Neck rib 1x1',       tube: true,  w: 35, ml: 18.5, pcs: 18, gsm: 280, direct: '' },
+    { name: 'Self fabric binding', tube: false, w: '', ml: '',   pcs: '', gsm: '',  direct: 0.08 }
+  ],
+  polo: [
+    { name: 'Collar',             tube: false, w: '', ml: '', pcs: '', gsm: '', direct: '' },
+    { name: 'Cuff (2 pcs)',       tube: true,  w: '', ml: '', pcs: '', gsm: '', direct: '' },
+    { name: 'Placket / binding',  tube: false, w: '', ml: '', pcs: '', gsm: '', direct: '' }
+  ]
+};
+
+
+/* ==================================================================
+   SMALL HELPERS
+   ================================================================== */
+
+const $ = selector => document.querySelector(selector);
+
+/** Text to number. Blank or invalid becomes 0. Understands "1,234" and "3%". */
+function num(value) {
+  const n = parseFloat(String(value ?? '').replace(/,/g, ''));
+  return Number.isFinite(n) ? n : 0;
+}
+
+/** Number to display text, e.g. fmt(1234.5, 1) -> "1,234.5". */
+function fmt(value, decimals = 2) {
+  return (+value).toLocaleString('en-US', {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals
+  });
+}
+
+/** Round to a fixed number of decimals and return a number. */
+function round(value, decimals = 3) {
+  return +(+value).toFixed(decimals);
+}
+
+function sum(list) {
+  return list.reduce((total, v) => total + v, 0);
+}
+
+/** Make text safe to place inside HTML. */
+function esc(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+const clone = obj => JSON.parse(JSON.stringify(obj));
+
+/** Text such as "95% Cotton / 5% Lycra / Elastane". */
+function compositionText(lines) {
+  return lines
+    .filter(l => l.pct > 0)
+    .map(l => `${round(l.pct, 2)}% ${l.type}`)
+    .join(' / ');
+}
+
+/** Kilograms per dozen pieces from CAD data. */
+function kgPerDozen(width, markerLength, gsm, pcsInMarker) {
+  if (pcsInMarker <= 0) return 0;
+  return width * markerLength * gsm * 12 / SQ_INCH_PER_SQ_METRE / 1000 / pcsInMarker;
+}
+
+
+/* ==================================================================
+   STATE
+   ================================================================== */
+
+function createDefaultState() {
+  const sizes = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
+  return {
+    product: 'tshirt',
+    info: {},
+    sizes,
+    colors: [
+      { name: 'Cream', qty: [4224, 4224, 3168, 2112, 1056, ''] },
+      { name: 'Pink',  qty: [4224, 4224, 3168, 2112, 1056, ''] }
+    ],
+    gsm: 180,
+    cad: sizes.map(() => ({ w: 71.5, ml: 177.5, pcs: 7 })),
+    comps: clone(COMPONENT_PRESETS.tshirt),
+    allowance: 3,
+    knitLoss: 5,
+    dyeLoss: 11,
+    sampleYarn: 0,
+    composition: [{ type: 'Cotton', detail: 'Combed Cotton 24/1', pct: 100 }],
+    remarks: ''
+  };
+}
+
+let state = createDefaultState();
+let R = {};   // latest calculation result
+
+
+/* ==================================================================
+   CALCULATION  (no screen code in here)
+   ================================================================== */
+
+function compute(s) {
+  const allowanceFactor = 1 + num(s.allowance) / 100;
+
+  // --- kg per dozen: body fabric for each size ---
+  const bodyKgDz = s.sizes.map((_, j) => {
+    const c = s.cad[j] || {};
+    return kgPerDozen(num(c.w), num(c.ml), num(s.gsm), num(c.pcs));
+  });
+
+  // --- kg per dozen: rib / collar / cuff / binding ---
+  const compKgDz = s.comps.map(c => {
+    if (num(c.direct) > 0) return num(c.direct);               // direct entry wins
+    const width = num(c.w) * (c.tube ? 2 : 1);                  // tube -> open width
+    return kgPerDozen(width, num(c.ml), num(c.gsm), num(c.pcs));
+  });
+  const trimsKgDz = sum(compKgDz);
+
+  // --- fabric per colour ---
+  const rows = s.colors.map(colour => {
+    const qty        = s.sizes.map((_, j) => num(colour.qty[j]));
+    const pcs        = sum(qty);
+    const bodyBySize = qty.map((q, j) => q * bodyKgDz[j] / 12);
+    const body       = sum(bodyBySize);
+    const trims      = pcs * trimsKgDz / 12;
+    const net        = body + trims;
+    return {
+      name: colour.name, qty, pcs, bodyBySize, body, trims, net,
+      booking: net * allowanceFactor
+    };
+  });
+
+  // --- totals ---
+  const totals = {
+    pcs:     sum(rows.map(x => x.pcs)),
+    body:    sum(rows.map(x => x.body)),
+    trims:   sum(rows.map(x => x.trims)),
+    net:     sum(rows.map(x => x.net)),
+    booking: sum(rows.map(x => x.booking)),
+    qtyBySize:         s.sizes.map((_, j) => sum(rows.map(x => x.qty[j]))),
+    bodyBySizeWithAllowance:
+                       s.sizes.map((_, j) => sum(rows.map(x => x.bodyBySize[j])) * allowanceFactor)
+  };
+  const avgBookingKgDz = totals.pcs ? totals.booking / (totals.pcs / 12) : 0;
+
+  // --- yarn ---
+  const knitLoss  = num(s.knitLoss);
+  const dyeLoss   = num(s.dyeLoss);
+  const lossPct   = knitLoss + dyeLoss;
+  const lossValid = lossPct < 100;
+  const yarnBeforeSample = lossValid ? totals.booking / (1 - lossPct / 100) : 0;
+
+  const yarnLines = s.composition.map(c => ({
+    type:   c.type,
+    detail: c.detail || '',
+    label:  c.detail || c.type,
+    pct:    num(c.pct),
+    kg:     yarnBeforeSample * num(c.pct) / 100
+  }));
+  const compositionPct = sum(yarnLines.map(l => l.pct));
+  const compositionOk  = Math.abs(compositionPct - 100) < 0.0001;
+  const sampleYarn     = num(s.sampleYarn);
+  const totalYarn      = sum(yarnLines.map(l => l.kg)) + sampleYarn;
+
+  // --- warnings shown above the result ---
+  const warnings = [];
+  s.sizes.forEach((size, j) => {
+    if (totals.qtyBySize[j] > 0 && bodyKgDz[j] === 0) {
+      warnings.push(`Size ${size} has a quantity but no CAD data (width, marker length and pcs in marker). Its body fabric counts as 0.`);
+    }
+  });
+  if (!lossValid) {
+    warnings.push('Knitting loss + dyeing loss must be below 100 %. Yarn cannot be calculated.');
+  }
+  if (!compositionOk) {
+    warnings.push(`Yarn composition adds up to ${round(compositionPct, 2)} %, not 100 %.`);
+  }
+
+  return {
+    allowanceFactor, bodyKgDz, compKgDz, rows, totals, avgBookingKgDz,
+    knitLoss, dyeLoss, lossPct, lossValid,
+    yarnBeforeSample, yarnLines, compositionPct, compositionOk,
+    sampleYarn, totalYarn, warnings
+  };
+}
+
+
+/* ==================================================================
+   FORM RENDERING
+   ================================================================== */
+
+function field(area, attrs, value, type = 'number') {
+  const numeric = type === 'number' ? 'inputmode="decimal" step="any"' : '';
+  return `<input type="${type}" ${numeric} data-a="${area}" ${attrs} value="${esc(value)}">`;
+}
+
+/** Size options = standard list + any imported size that is not in the list. */
+function sizeSelect(j) {
+  const current = state.sizes[j];
+  const options = SIZE_LIST.includes(current) ? SIZE_LIST : [...SIZE_LIST, current];
+  const takenElsewhere = size => state.sizes.some((s, k) => k !== j && s === size);
+
+  const items = options.map(size =>
+    `<option value="${esc(size)}"${size === current ? ' selected' : ''}${takenElsewhere(size) ? ' disabled' : ''}>${esc(size)}</option>`
+  ).join('');
+
+  return `<select data-a="size" data-j="${j}" aria-label="Size ${j + 1}">${items}</select>`;
+}
+
+function renderInfo() {
+  $('#infoGrid').innerHTML = INFO_FIELDS.map(([key, label, type]) => `
+    <div>
+      <label>${label}</label>
+      ${field('info', `data-k="${key}"`, state.info[key] || '', type || 'text')}
+    </div>`).join('');
+}
+
+function renderQuantities() {
+  const sizeHeads = state.sizes.map((_, j) => `
+    <th>
+      <div class="size-head">
+        ${sizeSelect(j)}
+        ${state.sizes.length > 1
+          ? `<button class="x" data-del-size="${j}" title="Remove this size" aria-label="Remove size">✕</button>`
+          : ''}
+      </div>
+    </th>`).join('');
+
+  const colourRows = state.colors.map((colour, i) => `
+    <tr>
+      <td>${field('colour', `data-i="${i}"`, colour.name, 'text')}</td>
+      ${state.sizes.map((_, j) => `<td>${field('qty', `data-i="${i}" data-j="${j}"`, colour.qty[j])}</td>`).join('')}
+      <td id="colourTotal${i}"></td>
+      <td>${state.colors.length > 1
+            ? `<button class="x" data-del-colour="${i}" title="Remove colour" aria-label="Remove colour">✕</button>`
+            : ''}</td>
+    </tr>`).join('');
+
+  $('#qtyTable').innerHTML = `
+    <thead><tr><th>Colour</th>${sizeHeads}<th>Total</th><th></th></tr></thead>
+    <tbody>${colourRows}</tbody>
+    <tfoot>
+      <tr>
+        <td>Total</td>
+        ${state.sizes.map((_, j) => `<td id="sizeTotal${j}"></td>`).join('')}
+        <td id="grandTotal"></td>
+        <td></td>
+      </tr>
+    </tfoot>`;
+
+  $('#btnAddSize').disabled = !nextFreeSize();
+}
+
+function renderCad() {
+  const rows = state.sizes.map((size, j) => `
+    <tr>
+      <td>${esc(size)}</td>
+      <td>${field('cad', `data-j="${j}" data-k="w"`,   state.cad[j].w)}</td>
+      <td>${field('cad', `data-j="${j}" data-k="ml"`,  state.cad[j].ml)}</td>
+      <td>${field('cad', `data-j="${j}" data-k="pcs"`, state.cad[j].pcs)}</td>
+      <td class="computed" id="bodyKg${j}"></td>
+    </tr>`).join('');
+
+  $('#cadTable').innerHTML = `
+    <thead>
+      <tr>
+        <th>Size</th><th>Fabric width (in)</th><th>Marker length (in)</th>
+        <th>Pcs in marker</th><th>kg/dzn</th>
+      </tr>
+    </thead>
+    <tbody>${rows}</tbody>`;
+
+  $('#gsm').value = state.gsm;
+}
+
+function renderComponents() {
+  const rows = state.comps.map((c, i) => `
+    <tr>
+      <td>${field('comp', `data-i="${i}" data-k="name"`, c.name, 'text')}</td>
+      <td>
+        <select data-a="comp" data-i="${i}" data-k="tube">
+          <option value="0"${c.tube ? '' : ' selected'}>Open</option>
+          <option value="1"${c.tube ? ' selected' : ''}>Tube</option>
+        </select>
+      </td>
+      ${['w', 'ml', 'pcs', 'gsm', 'direct'].map(k =>
+        `<td>${field('comp', `data-i="${i}" data-k="${k}"`, c[k])}</td>`).join('')}
+      <td class="computed" id="compKg${i}"></td>
+      <td><button class="x" data-del-comp="${i}" title="Remove component" aria-label="Remove component">✕</button></td>
+    </tr>`).join('');
+
+  $('#compTable').innerHTML = `
+    <thead>
+      <tr>
+        <th>Component</th><th>Type</th><th>Width (in)</th><th>Marker length (in)</th>
+        <th>Pcs</th><th>GSM</th><th>Direct kg/dzn</th><th>kg/dzn</th><th></th>
+      </tr>
+    </thead>
+    <tbody>${rows}</tbody>`;
+}
+
+function renderSettings() {
+  $('#settingsGrid').innerHTML = SETTING_FIELDS.map(([key, label]) => `
+    <div>
+      <label>${label}</label>
+      ${field('setting', `data-k="${key}"`, state[key])}
+    </div>`).join('');
+}
+
+function renderYarn() {
+  const rows = state.composition.map((c, i) => {
+    const typeOptions = YARN_TYPES.map(t =>
+      `<option value="${esc(t)}"${t === c.type ? ' selected' : ''}>${esc(t)}</option>`).join('');
+    return `
+      <tr>
+        <td><select data-a="yarn" data-i="${i}" data-k="type">${typeOptions}</select></td>
+        <td>${field('yarn', `data-i="${i}" data-k="detail"`, c.detail, 'text')}</td>
+        <td>${field('yarn', `data-i="${i}" data-k="pct"`, c.pct)}</td>
+        <td class="computed" id="yarnKg${i}"></td>
+        <td>${state.composition.length > 1
+              ? `<button class="x" data-del-yarn="${i}" title="Remove yarn" aria-label="Remove yarn">✕</button>`
+              : ''}</td>
+      </tr>`;
+  }).join('');
+
+  $('#yarnTable').innerHTML = `
+    <thead>
+      <tr><th>Yarn type</th><th>Yarn detail (count / quality)</th><th>Composition %</th><th>Yarn kg</th><th></th></tr>
+    </thead>
+    <tbody>${rows}</tbody>
+    <tfoot>
+      <tr><td>Total</td><td></td><td id="yarnPctTotal"></td><td id="yarnKgTotal"></td><td></td></tr>
+    </tfoot>`;
+}
+
+function renderAll() {
+  renderInfo();
+  $('#product').value = state.product;
+  renderQuantities();
+  renderCad();
+  renderComponents();
+  renderSettings();
+  renderYarn();
+  $('#remarks').value = state.remarks;
+  recalc();
+}
+
+
+/* ==================================================================
+   RESULT RENDERING
+   ================================================================== */
+
+function setText(selector, text) {
+  const el = $(selector);
+  if (el) el.textContent = text;
+}
+
+/** Recalculate and refresh every computed cell and the result block. */
+function recalc() {
+  R = compute(state);
+  const { rows, totals } = R;
+
+  R.bodyKgDz.forEach((v, j) => setText('#bodyKg' + j, fmt(v, 4)));
+  R.compKgDz.forEach((v, i) => setText('#compKg' + i, fmt(v, 4)));
+  rows.forEach((x, i)       => setText('#colourTotal' + i, fmt(x.pcs, 0)));
+  totals.qtyBySize.forEach((v, j) => setText('#sizeTotal' + j, fmt(v, 0)));
+  setText('#grandTotal', fmt(totals.pcs, 0));
+
+  R.yarnLines.forEach((l, i) => setText('#yarnKg' + i, fmt(l.kg, 1)));
+  setText('#yarnPctTotal', fmt(R.compositionPct, 2) + ' %');
+  setText('#yarnKgTotal', fmt(sum(R.yarnLines.map(l => l.kg)), 1));
+
+  const yarnStatus = $('#yarnStatus');
+  if (R.compositionOk) {
+    yarnStatus.textContent = 'Composition adds up to 100 %.';
+    yarnStatus.className = 'status ok';
+  } else {
+    yarnStatus.textContent = `Composition adds up to ${fmt(R.compositionPct, 2)} %. It must be 100 %.`;
+    yarnStatus.className = 'status error';
+  }
+
+  $('#warnings').innerHTML = R.warnings.map(w => `<li>${esc(w)}</li>`).join('');
+  renderResult();
+}
+
+function renderResult() {
+  const { rows, totals, yarnLines } = R;
+  const allowance = num(state.allowance);
+
+  const kpis = `
+    <div class="kpis">
+      <div><b>${fmt(totals.pcs, 0)}</b><span>Total pcs</span></div>
+      <div><b>${fmt(totals.booking, 1)} kg</b><span>Booking fabric (with ${allowance}%)</span></div>
+      <div><b>${fmt(R.avgBookingKgDz, 3)}</b><span>Avg booking kg/dzn</span></div>
+      <div><b>${fmt(R.totalYarn, 1)} kg</b><span>Total yarn incl. sample</span></div>
+    </div>`;
+
+  const bookingTable = `
+    <div class="table-wrap"><table>
+      <thead>
+        <tr><th>Colour</th><th>Pcs</th><th>Body kg</th><th>Trims kg</th><th>Net kg</th><th>Booking kg</th></tr>
+      </thead>
+      <tbody>
+        ${rows.map(x => `
+          <tr>
+            <td>${esc(x.name) || '—'}</td><td>${fmt(x.pcs, 0)}</td><td>${fmt(x.body)}</td>
+            <td>${fmt(x.trims)}</td><td>${fmt(x.net)}</td><td class="computed">${fmt(x.booking)}</td>
+          </tr>`).join('')}
+      </tbody>
+      <tfoot>
+        <tr>
+          <td>Total</td><td>${fmt(totals.pcs, 0)}</td><td>${fmt(totals.body)}</td>
+          <td>${fmt(totals.trims)}</td><td>${fmt(totals.net)}</td><td>${fmt(totals.booking)}</td>
+        </tr>
+      </tfoot>
+    </table></div>`;
+
+  const sizeTable = `
+    <p class="subhead">Size-wise body fabric for cutting (kg, with allowance)</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Colour</th>${state.sizes.map(s => `<th>${esc(s)}</th>`).join('')}</tr></thead>
+      <tbody>
+        ${rows.map(x => `
+          <tr>
+            <td>${esc(x.name) || '—'}</td>
+            ${x.bodyBySize.map(v => `<td>${fmt(v * R.allowanceFactor, 1)}</td>`).join('')}
+          </tr>`).join('')}
+      </tbody>
+      <tfoot>
+        <tr><td>Total</td>${totals.bodyBySizeWithAllowance.map(v => `<td>${fmt(v, 1)}</td>`).join('')}</tr>
+      </tfoot>
+    </table></div>`;
+
+  const yarnTable = `
+    <p class="subhead">Yarn requirement (process loss ${fmt(R.lossPct, 1)}%)</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Yarn</th><th>Type</th><th>%</th><th>Kg</th></tr></thead>
+      <tbody>
+        ${yarnLines.map(l => `
+          <tr><td>${esc(l.label)}</td><td>${esc(l.type)}</td><td>${fmt(l.pct, 1)}</td><td>${fmt(l.kg, 1)}</td></tr>`).join('')}
+        <tr><td>Sample / test yarn</td><td></td><td></td><td>${fmt(R.sampleYarn, 1)}</td></tr>
+        <tr class="total"><td>Total yarn</td><td></td><td>${fmt(R.compositionPct, 1)}</td><td>${fmt(R.totalYarn, 1)}</td></tr>
+      </tbody>
+    </table></div>`;
+
+  $('#result').innerHTML = kpis + bookingTable + sizeTable + yarnTable;
+}
+
+
+/* ==================================================================
+   EXCEL EXPORT
+   ================================================================== */
+
+const XL = {
+  red:   'FFC8102E',
+  pink:  'FFF7DDE1',
+  grey:  'FFEDEDED',
+  zebra: 'FFFAFAFA',
+  white: 'FFFFFFFF',
+  black: 'FF000000',
+  line:  'FFBFBFBF'
+};
+
+const XL_THIN   = { style: 'thin', color: { argb: XL.line } };
+const XL_BORDER = { top: XL_THIN, left: XL_THIN, bottom: XL_THIN, right: XL_THIN };
+
+const xlFill = argb => ({ type: 'pattern', pattern: 'solid', fgColor: { argb } });
+
+// Number formats
+const FMT_INT   = '#,##0;-#,##0;"-"';
+const FMT_KG1   = '#,##0.0';
+const FMT_KG2   = '#,##0.00';
+const FMT_KG4   = '0.0000';
+const FMT_PCT   = '0.0#';
+const FMT_DATE  = 'dd-mmm-yyyy';
+
+/** "2026-10-28" -> a real Excel date (or the original text if it cannot be read). */
+function toExcelDate(text) {
+  const m = String(text || '').match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  return m ? new Date(Date.UTC(+m[1], +m[2] - 1, +m[3])) : (text || '');
+}
+
+/** Row height for a block of wrapped text in a merged cell. */
+function wrappedTextHeight(text, charsPerLine) {
+  const lines = String(text).split('\n')
+    .reduce((n, line) => n + Math.max(1, Math.ceil(line.length / charsPerLine)), 0);
+  return Math.max(30, lines * 15 + 8);
+}
+
+function buildWorkbook(s, r) {
+  const { rows, totals } = r;
+  const sizes    = s.sizes;
+  const lastCol  = Math.max(9, sizes.length + 2);       // sheet width grows with sizes
+  const allow    = r.allowanceFactor;
+
+  const wb = new ExcelJS.Workbook();
+  wb.creator = 'Life Textile Ltd';
+  wb.created = new Date();
+
+  const ws = wb.addWorksheet('Fabric Booking', {
+    pageSetup: { orientation: 'landscape', paperSize: 9, fitToPage: true, fitToWidth: 1, fitToHeight: 0 },
+    views: [{ showGridLines: false }]
+  });
+  ws.columns = Array.from({ length: lastCol }, (_, i) => ({ width: i === 0 ? 34 : 14 }));
+
+  let n = 1;   // current row number
+
+  // ---------- writing helpers ----------
+
+  /** Write a value into columns from..to of the current row (merged when from < to). */
+  function put(from, to, value, o = {}) {
+    for (let c = from; c <= to; c++) {
+      const cell = ws.getCell(n, c);
+      if (o.border !== false) cell.border = XL_BORDER;
+      if (o.fill) cell.fill = xlFill(o.fill);
+    }
+    const cell = ws.getCell(n, from);
+    cell.value = value;
+    if (o.numFmt) cell.numFmt = o.numFmt;
+    cell.font = { bold: !!o.bold, size: o.size || 11, color: { argb: o.color || XL.black } };
+    cell.alignment = {
+      horizontal: o.align || 'left',
+      vertical: o.valign || 'middle',
+      wrapText: o.wrap !== false
+    };
+    if (to > from) ws.mergeCells(n, from, n, to);
+  }
+
+  function title(text, size, o = {}) {
+    put(1, lastCol, text, { border: false, bold: true, size, align: 'center', ...o });
+    ws.getRow(n).height = size + 14;
+    n++;
+  }
+
+  function sectionBar(text) {
+    put(1, lastCol, text, { border: false, bold: true, color: XL.white, fill: XL.red });
+    ws.getRow(n).height = 22;
+    n++;
+  }
+
+  function gap() { n++; }
+
+  /** One row holding two label/value pairs. */
+  function infoRow(label1, value1, label2, value2, o = {}) {
+    put(1, 1, label1, { bold: true, fill: XL.pink });
+    put(2, 4, value1, { numFmt: o.fmt1, align: 'left' });
+    put(5, 5, label2, { bold: true, fill: XL.pink });
+    put(6, lastCol, value2, { numFmt: o.fmt2, align: 'left' });
+    ws.getRow(n).height = o.height || 20;
+    n++;
+  }
+
+  /** The four headline numbers at the top. */
+  function kpiStrip(items) {
+    const base = Math.floor(lastCol / items.length);
+    let from = 1;
+    const spans = items.map((_, i) => {
+      const to = i === items.length - 1 ? lastCol : from + base - 1;
+      const span = [from, to];
+      from = to + 1;
+      return span;
+    });
+    spans.forEach(([a, b], i) => put(a, b, items[i].label, { bold: true, size: 10, fill: XL.pink, align: 'center' }));
+    ws.getRow(n).height = 20; n++;
+    spans.forEach(([a, b], i) => put(a, b, items[i].value, {
+      bold: true, size: 14, color: XL.red, align: 'center', numFmt: items[i].fmt
+    }));
+    ws.getRow(n).height = 30; n++;
+  }
+
+  /**
+   * Draw a table.
+   *   head, body, foot : arrays of cell values
+   *   fmt              : default number format; colFmt: { columnIndex: format }
+   *   boldCols         : column indexes shown bold in red
+   *   span             : last column of the table is merged across to this column
+   */
+  function table({ head, body, foot, fmt, colFmt = {}, boldCols = [], span }) {
+    const all = [head, ...body, ...(foot ? [foot] : [])];
+    all.forEach((rowValues, ri) => {
+      const isHead = ri === 0;
+      const isFoot = foot && ri === all.length - 1;
+      const lastIndex = rowValues.length - 1;
+
+      rowValues.forEach((value, ci) => {
+        const isNumber = typeof value === 'number';
+        const toCol = (span && ci === lastIndex) ? span : ci + 1;
+
+        const o = {
+          bold: isHead || isFoot || boldCols.includes(ci),
+          color: (!isHead && boldCols.includes(ci)) ? XL.red : XL.black,
+          align: ci === 0 ? 'left' : (isNumber ? 'right' : 'center'),
+          numFmt: isNumber ? (colFmt[ci] || fmt) : undefined
+        };
+        if (isHead)      { o.fill = XL.pink; o.align = ci === 0 ? 'left' : 'center'; }
+        else if (isFoot) { o.fill = XL.grey; }
+        else if (ri % 2 === 0) { o.fill = XL.zebra; }
+
+        put(ci + 1, toCol, value, o);
+      });
+      ws.getRow(n).height = isHead ? 32 : 20;
+      n++;
+    });
+  }
+
+  // ---------- TITLE ----------
+  title('LIFE TEXTILE LTD', 18, { color: XL.white, fill: XL.red });
+  title('FABRIC BOOKING', 12, { fill: XL.pink });
+  gap();
+
+  // ---------- ORDER INFORMATION ----------
+  const I = s.info;
+  infoRow('Buyer',            I.buyer || '', 'Style no.',   I.style || '');
+  infoRow('Item description', I.desc  || '', 'PO / Order',  I.po || '');
+  infoRow('Fabrication',      I.fab   || '', 'Booking date', toExcelDate(I.bdate), { fmt2: FMT_DATE });
+  infoRow('Product',          s.product === 'polo' ? 'Polo shirt' : 'T-shirt', 'Ship date', toExcelDate(I.ship), { fmt2: FMT_DATE });
+  infoRow('Merchandiser',     I.merch || '', 'Allowance %', num(s.allowance) + '%');
+  infoRow('Composition',      compositionText(r.yarnLines) || '', 'Body GSM', num(s.gsm), { fmt2: 'General', height: 22 });
+  gap();
+
+  // ---------- HEADLINE NUMBERS ----------
+  kpiStrip([
+    { label: 'Total pcs',               value: totals.pcs,                   fmt: '#,##0' },
+    { label: 'Booking fabric (kg)',     value: round(totals.booking, 2),     fmt: FMT_KG2 },
+    { label: 'Avg booking kg / dzn',    value: round(r.avgBookingKgDz, 3),   fmt: '0.000' },
+    { label: 'Total yarn incl. sample (kg)', value: round(r.totalYarn, 1),   fmt: FMT_KG1 }
+  ]);
+  gap();
+
+  // ---------- 1. ASSORTMENT ----------
+  sectionBar('1. ASSORTMENT (PCS)');
+  table({
+    head: ['Colour', ...sizes, 'Total pcs'],
+    body: rows.map(x => [x.name, ...x.qty, x.pcs]),
+    foot: ['TOTAL', ...totals.qtyBySize, totals.pcs],
+    fmt: FMT_INT
+  });
+  gap();
+
+  // ---------- 2. CONSUMPTION ----------
+  sectionBar('2. CONSUMPTION (CAD BASED) – KG PER DOZEN');
+  table({
+    head: ['Size / component', 'Fabric width (in)', 'Marker length (in)', 'Pcs in marker', 'GSM', 'kg/dzn', 'kg/dzn + allowance'],
+    body: [
+      ...sizes.map((size, j) => [
+        size, num(s.cad[j].w), num(s.cad[j].ml), num(s.cad[j].pcs), num(s.gsm),
+        round(r.bodyKgDz[j], 4), round(r.bodyKgDz[j] * allow, 4)
+      ]),
+      ...s.comps.map((c, i) => [
+        (c.name || 'Component') + (c.tube ? ' (tube)' : ' (open)'),
+        num(c.w), num(c.ml), num(c.pcs), num(c.gsm),
+        round(r.compKgDz[i], 4), round(r.compKgDz[i] * allow, 4)
+      ])
+    ],
+    fmt: 'General',
+    colFmt: { 5: FMT_KG4, 6: FMT_KG4 },
+    boldCols: [5]
+  });
+  gap();
+
+  // ---------- 3. FABRIC BOOKING ----------
+  sectionBar('3. FABRIC BOOKING (KG)');
+  table({
+    head: ['Colour', 'Pcs', 'Body kg', 'Trims kg', 'Net kg', 'Allowance %', 'Booking kg'],
+    body: rows.map(x => [x.name, x.pcs, round(x.body, 2), round(x.trims, 2), round(x.net, 2), num(s.allowance), round(x.booking, 2)]),
+    foot: ['TOTAL', totals.pcs, round(totals.body, 2), round(totals.trims, 2), round(totals.net, 2), num(s.allowance), round(totals.booking, 2)],
+    fmt: FMT_KG2,
+    colFmt: { 1: FMT_INT },
+    boldCols: [6]
+  });
+  gap();
+
+  // ---------- 4. SIZE-WISE BODY FABRIC ----------
+  sectionBar('4. SIZE-WISE BODY FABRIC FOR CUTTING (KG, WITH ALLOWANCE)');
+  table({
+    head: ['Colour', ...sizes, 'Total kg'],
+    body: rows.map(x => [x.name, ...x.bodyBySize.map(v => round(v * allow, 1)), round(x.body * allow, 1)]),
+    foot: ['TOTAL', ...totals.bodyBySizeWithAllowance.map(v => round(v, 1)), round(totals.body * allow, 1)],
+    fmt: FMT_KG1
+  });
+  gap();
+
+  // ---------- 5. YARN REQUIREMENT ----------
+  sectionBar('5. YARN REQUIREMENT');
+  table({
+    head: ['Item', 'Value', 'Remark'],
+    body: [
+      ['Booking fabric (kg)',            round(totals.booking, 1),    ''],
+      ['Knitting loss %',                r.knitLoss,                  'Yarn to grey fabric'],
+      ['Dyeing / finishing loss %',      r.dyeLoss,                   'Grey to finished fabric'],
+      ['Total process loss %',           r.lossPct,                   'Yarn = Fabric ÷ (1 − loss %)'],
+      ['Yarn required before sample (kg)', round(r.yarnBeforeSample, 1), '']
+    ],
+    fmt: FMT_KG1,
+    span: 5
+  });
+  gap();
+  table({
+    head: ['Yarn / count', 'Yarn type', 'Composition %', 'Yarn (kg)'],
+    body: [
+      ...r.yarnLines.map(l => [l.label, l.type, l.pct, round(l.kg, 1)]),
+      ['Sample / test yarn', '', '', r.sampleYarn]
+    ],
+    foot: ['TOTAL YARN (kg)', '', round(r.compositionPct, 2), round(r.totalYarn, 1)],
+    fmt: FMT_KG1,
+    colFmt: { 2: FMT_PCT },
+    boldCols: [3]
+  });
+
+  // ---------- 6. REMARKS (only when something was typed) ----------
+  const remarks = (s.remarks || '').trim();
+  if (remarks) {
+    gap();
+    sectionBar('6. REMARKS');
+    put(1, lastCol, remarks, { valign: 'top' });
+    ws.getRow(n).height = wrappedTextHeight(remarks, lastCol * 14);
+    n++;
+  }
+
+  // ---------- SIGNATURES ----------
+  n += 2;
+  const signatures = [
+    [1, 2, 'Asst. Merchandiser'],
+    [Math.max(4, Math.floor(lastCol / 2)), Math.max(5, Math.floor(lastCol / 2) + 1), 'Sr. Merchandiser'],
+    [lastCol - 1, lastCol, 'GM']
+  ];
+  signatures.forEach(([from, to, label]) => {
+    for (let c = from; c <= to; c++) ws.getCell(n, c).border = { top: { style: 'thin', color: { argb: XL.black } } };
+    const cell = ws.getCell(n, from);
+    cell.value = label;
+    cell.font = { bold: true };
+    cell.alignment = { horizontal: 'center' };
+    ws.mergeCells(n, from, n, to);
+  });
+
+  return wb;
+}
+
+async function downloadBlob(blob, filename) {
+  // Claude artifact sandbox has its own download hook; normal websites use the link below.
+  let sandbox = null;
+  try { if (window.claude) sandbox = await window.claude.use('downloads'); } catch (e) { /* ignore */ }
+
+  if (sandbox) {
+    try { await sandbox.save({ filename, data: blob }); } catch (e) { /* ignore */ }
+    return;
+  }
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = filename;
+  link.click();
+  setTimeout(() => URL.revokeObjectURL(link.href), 5000);
+}
+
+async function exportExcel() {
+  recalc();
+
+  if (!R.compositionOk || !R.lossValid) {
+    const proceed = confirm('There are problems in the yarn section (see the warnings in the Result box).\n\nDownload the Excel file anyway?');
+    if (!proceed) return;
+  }
+
+  const wb   = buildWorkbook(state, R);
+  const buf  = await wb.xlsx.writeBuffer();
+  const blob = new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  const name = 'Fabric_Booking_' + String(state.info.style || state.info.po || 'order').replace(/[^\w-]+/g, '_') + '.xlsx';
+  await downloadBlob(blob, name);
+}
+
+
+/* ==================================================================
+   EXCEL IMPORT
+   Reads the layout written by buildWorkbook (and files from the older version).
+   Only INPUT cells are read; calculated cells are ignored and recalculated.
+   ================================================================== */
+
+/** Plain value of an ExcelJS cell (handles formulas, rich text, links). */
+function cellValue(cell) {
+  let v = cell.value;
+  if (v && typeof v === 'object' && !(v instanceof Date)) {
+    if ('result' in v)        v = v.result;
+    else if (v.richText)      v = v.richText.map(t => t.text).join('');
+    else if ('text' in v)     v = v.text;
+  }
+  return v == null ? '' : v;
+}
+
+/** Whole sheet as rows[rowNumber][columnNumber]. */
+function readSheet(ws) {
+  const rows = [];
+  ws.eachRow({ includeEmpty: true }, (row, rowNumber) => {
+    const values = [];
+    row.eachCell({ includeEmpty: true }, (cell, colNumber) => { values[colNumber] = cellValue(cell); });
+    rows[rowNumber] = values;
+  });
+  return rows;
+}
+
+function normalizeSize(text) {
+  const t = String(text).toUpperCase().replace(/\s+/g, '');
+  return SIZE_ALIASES[t] || t;
+}
+
+function guessYarnType(text) {
+  const t = String(text).toLowerCase();
+  if (/lycra|elastane|elastine|spandex/.test(t)) return 'Lycra / Elastane';
+  if (/poly/.test(t))     return 'Polyester';
+  if (/viscose|rayon/.test(t)) return 'Viscose';
+  if (/modal/.test(t))    return 'Modal';
+  if (/nylon|polyamide/.test(t)) return 'Nylon';
+  if (/acrylic/.test(t))  return 'Acrylic';
+  if (/linen/.test(t))    return 'Linen';
+  if (/cotton/.test(t))   return 'Cotton';
+  return 'Other';
+}
+
+/** Any date-like cell -> "YYYY-MM-DD" for the date boxes ('' if unreadable). */
+function toIsoDate(value) {
+  if (value instanceof Date && !isNaN(value)) {
+    return value.toISOString().slice(0, 10);
+  }
+  const text = String(value || '').trim();
+  if (!text) return '';
+  if (/^\d{4}-\d{2}-\d{2}/.test(text)) return text.slice(0, 10);
+
+  const months = { jan:1, feb:2, mar:3, apr:4, may:5, jun:6, jul:7, aug:8, sep:9, oct:10, nov:11, dec:12 };
+  const m = text.match(/^(\d{1,2})[-\/ ]([A-Za-z]{3,}|\d{1,2})[-\/ ](\d{4})$/);
+  if (!m) return '';
+  const month = isNaN(m[2]) ? months[m[2].slice(0, 3).toLowerCase()] : +m[2];
+  if (!month) return '';
+  return `${m[3]}-${String(month).padStart(2, '0')}-${String(+m[1]).padStart(2, '0')}`;
+}
+
+function parseWorkbook(wb) {
+  const ws = wb.getWorksheet('Fabric Booking') || wb.worksheets[0];
+  if (!ws) throw new Error('The file has no worksheet.');
+
+  const rows = readSheet(ws);
+  const at   = (r, c) => (rows[r] && rows[r][c] != null ? rows[r][c] : '');
+  const text = (r, c) => String(at(r, c)).trim();
+
+  // ---- find the numbered section bars, e.g. "1. ASSORTMENT (PCS)" ----
+  const bars = {};
+  rows.forEach((_, r) => {
+    const t = text(r, 1);
+    const m = t.match(/^(\d)\.\s+[A-Z]/);
+    if (m && t === t.toUpperCase() && !(m[1] in bars)) bars[m[1]] = r;
+  });
+  if (!bars[1] || !bars[2]) {
+    throw new Error('This does not look like a booking file from this page (sections "1. ASSORTMENT" and "2. CONSUMPTION" not found).');
+  }
+  const barRows = Object.values(bars).sort((a, b) => a - b);
+  const sectionEnd = start => (barRows.find(r => r > start) || rows.length + 1);
+
+  const result = createDefaultState();
+  const notes  = [];
+
+  // ---- order information (rows above section 1) ----
+  const infoKeys = {
+    'buyer': 'buyer', 'style no.': 'style', 'item description': 'desc', 'po / order': 'po',
+    'fabrication': 'fab', 'booking date': 'bdate', 'ship date': 'ship', 'merchandiser': 'merch'
+  };
+  result.info = {};
+  for (let r = 1; r < bars[1]; r++) {
+    [[1, 2], [5, 6]].forEach(([labelCol, valueCol]) => {
+      const label = text(r, labelCol).toLowerCase();
+      const value = at(r, valueCol);
+      if (infoKeys[label]) {
+        const key = infoKeys[label];
+        result.info[key] = (key === 'bdate' || key === 'ship') ? toIsoDate(value) : String(value).trim();
+      } else if (label === 'product') {
+        result.product = /polo/i.test(String(value)) ? 'polo' : 'tshirt';
+      } else if (label.startsWith('allowance') && String(value) !== '') {
+        result.allowance = num(value);
+      }
+    });
+  }
+
+  // ---- 1. assortment ----
+  const headRow = bars[1] + 1;
+  const sizes = [];
+  for (let c = 2; c < 60; c++) {
+    const t = text(headRow, c);
+    if (!t || /^total/i.test(t)) break;
+    sizes.push(normalizeSize(t));
+  }
+  if (!sizes.length) throw new Error('No sizes found in section 1.');
+  result.sizes = sizes;
+
+  const colours = [];
+  for (let r = headRow + 1; r < sectionEnd(bars[1]); r++) {
+    const name = text(r, 1);
+    if (!name || /^total/i.test(name)) break;
+    colours.push({
+      name,
+      qty: sizes.map((_, j) => { const q = num(at(r, 2 + j)); return q || ''; })
+    });
+  }
+  if (!colours.length) throw new Error('No colours found in section 1.');
+  result.colors = colours;
+
+  // ---- 2. consumption: first rows are the sizes, the rest are rib / trims ----
+  result.cad = sizes.map(() => ({ w: '', ml: '', pcs: '' }));
+  result.comps = [];
+  const nz = v => (num(v) ? num(v) : '');
+
+  let r = bars[2] + 2;
+  const end2 = sectionEnd(bars[2]);
+  sizes.forEach((_, j, list) => {
+    if (r >= end2) return;
+    result.cad[j] = { w: nz(at(r, 2)), ml: nz(at(r, 3)), pcs: nz(at(r, 4)) };
+    if (j === 0 && num(at(r, 5))) result.gsm = num(at(r, 5));
+    r++;
+  });
+  for (; r < end2 && text(r, 1); r++) {
+    const label  = text(r, 1);
+    const tube   = /\(tube\)\s*$/i.test(label);
+    const comp   = {
+      name: label.replace(/\s*\((tube|open)\)\s*$/i, ''),
+      tube,
+      w: nz(at(r, 2)), ml: nz(at(r, 3)), pcs: nz(at(r, 4)), gsm: nz(at(r, 5)),
+      direct: ''
+    };
+    // If the stored kg/dzn is not what the CAD numbers give, it was a direct entry.
+    const stored = num(at(r, 6));
+    const fromCad = kgPerDozen(num(comp.w) * (tube ? 2 : 1), num(comp.ml), num(comp.gsm), num(comp.pcs));
+    if (stored > 0 && Math.abs(stored - fromCad) > 0.00051) comp.direct = stored;
+    result.comps.push(comp);
+  }
+
+  // ---- 5. yarn ----
+  let knitLoss = null, dyeLoss = null, legacyLoss = null;
+  let legacyMain = null, legacyLycra = 0;
+  const composition = [];
+
+  if (bars[5]) {
+    let inComposition = false;
+    for (let y = bars[5] + 1; y < sectionEnd(bars[5]); y++) {
+      const label = text(y, 1);
+      const lower = label.toLowerCase();
+      if (!label) { inComposition = false; continue; }
+
+      if (/^yarn\s*\/\s*count/i.test(label)) { inComposition = true; continue; }
+
+      if (inComposition) {
+        if (/^total/i.test(label)) { inComposition = false; continue; }
+        if (/^sample/i.test(label)) { result.sampleYarn = num(at(y, 4)) || num(at(y, 2)); continue; }
+        const typeText = text(y, 2);
+        composition.push({
+          type:   YARN_TYPES.includes(typeText) ? typeText : guessYarnType(typeText || label),
+          detail: label === typeText ? '' : label,
+          pct:    num(at(y, 3))
+        });
+        continue;
+      }
+
+      if (/^process loss/.test(lower))           legacyLoss = num(at(y, 2));         // old file
+      else if (/knitting loss/.test(lower))      knitLoss = num(at(y, 2));
+      else if (/dyeing/.test(lower) && /loss/.test(lower)) dyeLoss = num(at(y, 2));
+      else if (/^sample/.test(lower))            result.sampleYarn = num(at(y, 2));   // old file
+      else if (/^lycra/.test(lower))             legacyLycra = num(at(y, 2));         // old file
+      else if (/\(kg\)\s*$/.test(lower) && !/^(booking|total|yarn required)/.test(lower)) {
+        legacyMain = { label: label.replace(/\s*\(kg\)\s*$/i, ''), kg: num(at(y, 2)) };  // old file
+      }
+    }
+  }
+
+  if (knitLoss != null || dyeLoss != null) {
+    result.knitLoss = knitLoss || 0;
+    result.dyeLoss  = dyeLoss  || 0;
+  } else if (legacyLoss != null) {
+    result.knitLoss = legacyLoss;
+    result.dyeLoss  = 0;
+    notes.push('Old file: knitting and dyeing loss were saved as one number. It was put in "Knitting loss %". Please split it.');
+  }
+
+  if (composition.length) {
+    result.composition = composition;
+  } else if (legacyMain) {
+    const total   = legacyMain.kg + legacyLycra;
+    const lycraPct = total > 0 ? round(legacyLycra / total * 100, 2) : 0;
+    result.composition = [{
+      type: guessYarnType(legacyMain.label), detail: legacyMain.label, pct: round(100 - lycraPct, 2)
+    }];
+    if (lycraPct > 0) result.composition.push({ type: 'Lycra / Elastane', detail: '', pct: lycraPct });
+    notes.push('Old file: yarn composition was worked out from the yarn and lycra kg. Please check it.');
+  }
+
+  // ---- 6. remarks ----
+  result.remarks = bars[6] ? String(at(bars[6] + 1, 1)).trim() : '';
+
+  return { data: result, notes };
+}
+
+function showImportStatus(message, kind) {
+  const el = $('#importStatus');
+  el.textContent = message;
+  el.className = 'status ' + kind;
+}
+
+async function importExcel(file) {
+  if (!confirm('Importing will replace everything currently entered. Continue?')) return;
+  try {
+    const wb = new ExcelJS.Workbook();
+    await wb.xlsx.load(await file.arrayBuffer());
+    const { data, notes } = parseWorkbook(wb);
+
+    state = data;
+    renderAll();
+
+    const base = `Imported “${file.name}”: ${state.colors.length} colour(s), ${state.sizes.length} size(s), ${state.comps.length} component(s).`;
+    showImportStatus(notes.length ? `${base} ${notes.join(' ')}` : base, notes.length ? 'warn' : 'ok');
+  } catch (err) {
+    showImportStatus('Could not import: ' + err.message, 'error');
+  }
+}
+
+
+/* ==================================================================
+   SIZE / COLOUR / COMPONENT ACTIONS
+   ================================================================== */
+
+/** The size the "+ Add size" button will add (next one after the largest in use). */
+function nextFreeSize() {
+  const highest = Math.max(-1, ...state.sizes.map(s => SIZE_LIST.indexOf(s)));
+  return SIZE_LIST.slice(highest + 1).find(s => !state.sizes.includes(s))
+      || SIZE_LIST.find(s => !state.sizes.includes(s))
+      || null;
+}
+
+function addSize() {
+  const size = nextFreeSize();
+  if (!size) return;
+  state.sizes.push(size);
+  state.cad.push({ w: '', ml: '', pcs: '' });
+  state.colors.forEach(c => c.qty.push(''));
+  renderQuantities();
+  renderCad();
+  recalc();
+}
+
+function removeSize(j) {
+  if (state.sizes.length <= 1) return;
+  state.sizes.splice(j, 1);
+  state.cad.splice(j, 1);
+  state.colors.forEach(c => c.qty.splice(j, 1));
+  renderQuantities();
+  renderCad();
+  recalc();
+}
+
+
+/* ==================================================================
+   EVENTS
+   ================================================================== */
+
+// Typing in any box or choosing from any drop-down
+document.addEventListener('input', e => {
+  const el = e.target;
+  const area = el.dataset.a;
+  if (!area) return;
+
+  const i = +el.dataset.i;
+  const j = +el.dataset.j;
+  const key = el.dataset.k;
+  const value = el.value;
+
+  switch (area) {
+    case 'info':    state.info[key] = value; break;
+    case 'colour':  state.colors[i].name = value; break;
+    case 'qty':     state.colors[i].qty[j] = value; break;
+    case 'cad':     state.cad[j][key] = value; break;
+    case 'comp':    state.comps[i][key] = (key === 'tube') ? value === '1' : value; break;
+    case 'setting': state[key] = value; break;
+    case 'yarn':    state.composition[i][key] = value; break;
+    case 'remarks': state.remarks = value; break;
+
+    case 'size':    // a new size was picked: names appear in several tables, so redraw them
+      state.sizes[j] = value;
+      renderQuantities();
+      renderCad();
+      break;
+  }
+  recalc();
+});
+
+// Buttons
+document.addEventListener('click', e => {
+  const btn = e.target.closest('button');
+  if (!btn) return;
+  const d = btn.dataset;
+
+  if (d.delColour !== undefined && state.colors.length > 1) {
+    state.colors.splice(+d.delColour, 1);
+    renderQuantities(); recalc();
+  }
+  if (d.delSize !== undefined) removeSize(+d.delSize);
+  if (d.delComp !== undefined) {
+    state.comps.splice(+d.delComp, 1);
+    renderComponents(); recalc();
+  }
+  if (d.delYarn !== undefined && state.composition.length > 1) {
+    state.composition.splice(+d.delYarn, 1);
+    renderYarn(); recalc();
+  }
+});
+
+$('#product').onchange = e => {
+  state.product = e.target.value;
+  state.comps = clone(COMPONENT_PRESETS[state.product]);
+  renderComponents();
+  recalc();
+};
+
+$('#btnAddColour').onclick = () => {
+  state.colors.push({ name: '', qty: state.sizes.map(() => '') });
+  renderQuantities(); recalc();
+};
+
+$('#btnAddSize').onclick = addSize;
+
+$('#btnAddComp').onclick = () => {
+  state.comps.push({ name: '', tube: false, w: '', ml: '', pcs: '', gsm: '', direct: '' });
+  renderComponents(); recalc();
+};
+
+$('#btnAddYarn').onclick = () => {
+  const used = state.composition.map(c => c.type);
+  const next = YARN_TYPES.find(t => !used.includes(t)) || 'Other';
+  state.composition.push({ type: next, detail: '', pct: 0 });
+  renderYarn(); recalc();
+};
+
+$('#btnCopyCad').onclick = () => {
+  const first = state.cad[0];
+  state.cad = state.sizes.map(() => ({ ...first }));
+  renderCad(); recalc();
+};
+
+$('#btnExport').onclick = exportExcel;
+
+$('#btnImport').onclick = () => $('#fileImport').click();
+$('#fileImport').onchange = e => {
+  const file = e.target.files[0];
+  e.target.value = '';           // lets the same file be chosen again later
+  if (file) importExcel(file);
+};
+
+
+/* ==================================================================
+   START
+   ================================================================== */
+renderAll();
+</script>
+</body>
+</html>
